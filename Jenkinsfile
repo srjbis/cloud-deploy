@@ -12,6 +12,7 @@ pipeline {
     }
     
     stages {
+	/*
         stage('Fix Git') {
             steps {
                 sh "git config --global --add safe.directory '*'"
@@ -24,6 +25,7 @@ pipeline {
                     url: 'https://github.com/srjbis/cloud-deploy.git'
             }
         }
+	*/
         stage('Connect to GKE') {
 			steps {
 				sh '''
