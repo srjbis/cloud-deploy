@@ -51,7 +51,7 @@ pipeline {
         stage('Get Redis External IP from gke') {
             steps {
                 script {
-                    GCP_REDIS_IP = sh(
+                    def GCP_REDIS_IP = sh(
                         script: """
                             kubectl get svc redis-lb -n production \
                             -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
@@ -106,7 +106,7 @@ pipeline {
         stage('Get Redis External IP from aks') {
             steps {
                 script {
-                    AZURE_REDIS_IP = sh(
+                    def AZURE_REDIS_IP = sh(
                         script: """
                             kubectl get svc redis-lb -n production \
                             -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
