@@ -36,7 +36,7 @@ pipeline {
 				'''
             }
         }
-        stage('Verify Connection') {
+        stage('Verify Connection to gke') {
             steps {
                 sh 'kubectl get nodes'
             }
@@ -91,7 +91,7 @@ pipeline {
                 '''
             }
         }
-        stage('Verify Connection') {
+        stage('Verify Connection to aks') {
             steps {
                 sh 'kubectl get nodes'
             }
