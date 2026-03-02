@@ -2,13 +2,15 @@ pipeline {
     agent any
     environment {
         GCP_PROJECT_ID = credentials('gcp-project-id')
-        GKE_CLUSTER_NAME = "application-gke-cluster"
+        GKE_APPLICATION_CLUSTER_NAME = "application-gke-cluster"
+        GKE_DATABASE_CLUSTER_NAME = "database-gke-cluster"
         GCP_ZONE = "asia-south1-a"
         
         AZURE_TENANT_ID = credentials('azure-tenant-id')
         AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
         AZURE_RESOURCE_GROUP = "rg-hybrid"
-        AKS_CLUSTER_NAME = "application-aks-cluster"
+        AKS_APPLICATION_CLUSTER_NAME = "application-aks-cluster"
+        AKS_DATABASE_CLUSTER_NAME = "database-aks-cluster"
     }
     
     stages {
@@ -30,16 +32,35 @@ pipeline {
 			steps {
 				sh '''
 				gcloud config set project $GCP_PROJECT_ID
-				gcloud container clusters get-credentials $GKE_CLUSTER_NAME --zone $GCP_ZONE
-				kubectl get nodes
+				gcloud container clusters get-credentials $GKE_DATABASE_CLUSTER_NAME --zone $GCP_ZONE
 				'''
+            }
+        }
+        stage('Verify Connection') {
+            steps {
+                sh 'kubectl get nodes'
             }
         }
         stage('Deploy to GKE') {
             steps {
                 sh '''
-                kubectl apply -f deployment.yaml
+                kubectl apply -f database-deployment.yaml
                 '''
+            }
+        }
+        stage('Get Redis External IP from gke') {
+            steps {
+                script {
+                    GCP_REDIS_IP = sh(
+                        script: """
+                            kubectl get svc redis-lb -n production \
+                            -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                    echo "GKE Redis IP: ${GCP_REDIS_IP}"
+                }
             }
         }
         stage('Azure Login') {
@@ -65,7 +86,7 @@ pipeline {
                 sh '''
                 az aks get-credentials \
                   --resource-group $AZURE_RESOURCE_GROUP \
-                  --name $AKS_CLUSTER_NAME \
+                  --name $AKS_DATABASE_CLUSTER_NAME \
                   --overwrite-existing
                 '''
             }
@@ -78,8 +99,23 @@ pipeline {
         stage('Deploy to AKS') {
             steps {
                 sh '''
-                kubectl apply -f deployment.yaml
+                kubectl apply -f database-deployment.yaml
                 '''
+            }
+        }
+        stage('Get Redis External IP from aks') {
+            steps {
+                script {
+                    AZURE_REDIS_IP = sh(
+                        script: """
+                            kubectl get svc redis-lb -n production \
+                            -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                    echo "AKS Redis IP: ${AZURE_REDIS_IP}"
+                }
             }
         }
     }
