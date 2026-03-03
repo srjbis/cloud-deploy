@@ -15,7 +15,15 @@ type: Opaque
 stringData:
   REDIS_PASSWORD: Password
 ---
-
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: production
+data:
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"  
+---
 # Redis Service
 
 apiVersion: v1
