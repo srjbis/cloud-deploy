@@ -1,190 +1,221 @@
-pipeline {
-    agent any
-    environment {
-        GCP_PROJECT_ID = credentials('gcp-project-id')
-        GKE_APPLICATION_CLUSTER_NAME = "application-gke-cluster"
-        GKE_DATABASE_CLUSTER_NAME = "database-gke-cluster"
-        GCP_ZONE = "asia-south1-a"
-        
-        AZURE_TENANT_ID = credentials('azure-tenant-id')
-        AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
-        AZURE_RESOURCE_GROUP = "rg-hybrid"
-        AKS_APPLICATION_CLUSTER_NAME = "application-aks-cluster"
-        AKS_DATABASE_CLUSTER_NAME = "database-aks-cluster"
-    }
-    
-    stages {
-	/*
-        stage('Fix Git') {
-            steps {
-                sh "git config --global --add safe.directory '*'"
-            }
-        }
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main',
-                    credentialsId: 'git-cred',
-                    url: 'https://github.com/srjbis/cloud-deploy.git'
-            }
-        }
-	*/
-        stage('Connect to GKE DATABASE') {
-			steps {
-				sh '''
-				gcloud config set project $GCP_PROJECT_ID
-				gcloud container clusters get-credentials $GKE_DATABASE_CLUSTER_NAME --zone $GCP_ZONE
-				'''
-            }
-        }
-        stage('Verify Connection to gke database') {
-            steps {
-                sh 'kubectl get nodes'
-            }
-        }
-        stage('Deploy to GKE DATABASE') {
-            steps {
-                sh '''
-                kubectl apply -f database-deployment.yaml
-                '''
-            }
-        }
-        stage('Wait for Redis IP in GKE') {
-            steps {
-                script {
+#### Namespace #########
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+---
 
-                    def REDIS_IP = ""
+# Redis Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  namespace: production
+type: Opaque
+stringData:
+  REDIS_PASSWORD: Password
+---
 
-                    timeout(time: 5, unit: 'MINUTES') {
-                        while (!REDIS_IP) {
-                            REDIS_IP = sh(
-                                script: "kubectl get svc redis-lb -n data -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
-                                returnStdout: true
-                            ).trim()
+# Redis Service
 
-                            if (!REDIS_IP) {
-                                echo "Waiting for Redis external IP..."
-                                sleep time: 10, unit: 'SECONDS'
-                            }
-                        }
-                    }
-                    echo "Redis IP acquired: ${REDIS_IP}"
-                    // Save for later stages
-                    env.REDIS_IP = REDIS_IP
-                }
-            }
-        }
-        stage('Connect to GKE APPLICATION') {
-			steps {
-				sh '''
-				gcloud config set project $GCP_PROJECT_ID
-				gcloud container clusters get-credentials $GKE_APPLICATION_CLUSTER_NAME --zone $GCP_ZONE
-				'''
-            }
-        }
-        stage('Verify Connection to gke application') {
-            steps {
-                sh 'kubectl get nodes'
-            }
-        }
-        stage('Deploy App to GKE APPLICATION') {
-            steps {
-                script {
-                    sh """
-                    export REDIS_HOST=${REDIS_IP}
-                    envsubst < application-production-stack.yaml | kubectl apply -f -
-                    """
-                }
-            }
-        }
-        stage('Azure Login') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: '4b17e6b1-73ab-4b2f-9bae-8342cc46e89a',
-                    usernameVariable: 'AZURE_CLIENT_ID',
-                    passwordVariable: 'AZURE_CLIENT_SECRET'
-                )]) {
-                    sh '''
-                    az login --service-principal \
-                      -u $AZURE_CLIENT_ID \
-                      -p $AZURE_CLIENT_SECRET \
-                      --tenant $AZURE_TENANT_ID
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: production
+spec:
+  type: ExternalName
+  externalName: ${REDIS_IP}
+---
 
-                    az account set --subscription $AZURE_SUBSCRIPTION_ID
-                    '''
-                }
-            }
-        }
-        stage('Connect to AKS database') {
-            steps {
-                sh '''
-                az aks get-credentials \
-                  --resource-group $AZURE_RESOURCE_GROUP \
-                  --name $AKS_DATABASE_CLUSTER_NAME \
-                  --overwrite-existing
-                '''
-            }
-        }
-        stage('Verify Connection to database aks') {
-            steps {
-                sh 'kubectl get nodes'
-            }
-        }
-        stage('Deploy to AKS database') {
-            steps {
-                sh '''
-                kubectl apply -f database-deployment.yaml
-                '''
-            }
-        }
-        stage('Wait for Redis IP in AKS') {
-            steps {
-                script {
+# API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - name: api
+        image: hashicorp/http-echo
+        args:
+          - "-text=api connected"
+        ports:
+        - containerPort: 5678
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            memory: "256Mi"
+            cpu: "300m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5678
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5678
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        env:
+          - name: REDIS_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: api-config
+                key: REDIS_HOST
+          - name: REDIS_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: api-config
+                key: REDIS_PORT
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis-secret
+                key: REDIS_PASSWORD
+---
 
-                    def REDIS_IP = ""
+# API Service
 
-                    timeout(time: 5, unit: 'MINUTES') {
-                        while (!REDIS_IP) {
-                            REDIS_IP = sh(
-                                script: "kubectl get svc redis-lb -n data -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
-                                returnStdout: true
-                            ).trim()
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: production
+spec:
+  selector:
+    app: api
+  ports:
+  - port: 80
+    targetPort: 5678
+---
 
-                            if (!REDIS_IP) {
-                                echo "Waiting for Redis external IP..."
-                                sleep time: 10, unit: 'SECONDS'
-                            }
-                        }
-                    }
-                    echo "Redis IP acquired: ${REDIS_IP}"
-                    // Save for later stages
-                    env.REDIS_IP = REDIS_IP
-                }
-            }
-        }
-        stage('Connect to AKS APPLICATION') {
-            steps {
-                sh '''
-                az aks get-credentials \
-                  --resource-group $AZURE_RESOURCE_GROUP \
-                  --name $AKS_APPLICATION_CLUSTER_NAME \
-                  --overwrite-existing
-                '''
-            }
-        }
-        stage('Verify Connection to app aks') {
-            steps {
-                sh 'kubectl get nodes'
-            }
-        }
-        stage('Deploy App to AKS') {
-            steps {
-                script {
-                    sh """
-                    export REDIS_HOST=${REDIS_IP}
-                    envsubst < application-production-stack.yaml | kubectl apply -f -
-                    """
-                }
-            }
-        }
-    }
-}
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: production
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:stable
+        ports:
+        - containerPort: 80
+---
+
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: production
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+---
+
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  namespace: production
+spec:
+  rules:
+  - host: app.local
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: frontend
+            port: 
+              number: 80
+---
+
+# HPA
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-hpa
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+---
+
+# PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-pdb
+  namespace: production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: api
+---
+
+# NetworkPolicy
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: restrict-traffic
+  namespace: production
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            app: frontend
+      - podSelector:
+          matchLabels:
+            app: api
+
