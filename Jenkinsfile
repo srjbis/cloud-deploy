@@ -57,7 +57,7 @@ pipeline {
                     timeout(time: 5, unit: 'MINUTES') {
                         while (!REDIS_IP) {
                             REDIS_IP = sh(
-                                script: "kubectl get svc redis-lb -n data -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
+                                script: "kubectl get svc redis-lb -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
                                 returnStdout: true
                             ).trim()
 
@@ -145,7 +145,7 @@ pipeline {
                     timeout(time: 5, unit: 'MINUTES') {
                         while (!REDIS_IP) {
                             REDIS_IP = sh(
-                                script: "kubectl get svc redis-lb -n data -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
+                                script: "kubectl get svc redis-lb -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
                                 returnStdout: true
                             ).trim()
 
