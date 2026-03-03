@@ -28,7 +28,7 @@ pipeline {
             }
         }
 	*/
-        stage('Connect to GKE') {
+        stage('Connect to GKE DATABASE') {
 			steps {
 				sh '''
 				gcloud config set project $GCP_PROJECT_ID
@@ -36,30 +36,63 @@ pipeline {
 				'''
             }
         }
-        stage('Verify Connection to gke') {
+        stage('Verify Connection to gke database') {
             steps {
                 sh 'kubectl get nodes'
             }
         }
-        stage('Deploy to GKE') {
+        stage('Deploy to GKE DATABASE') {
             steps {
                 sh '''
                 kubectl apply -f database-deployment.yaml
                 '''
             }
         }
-        stage('Get Redis External IP from gke') {
+        stage('Wait for Redis IP in GKE') {
             steps {
                 script {
-                    def GCP_REDIS_IP = sh(
-                        script: """
-                            kubectl get svc redis-lb -n production \
-                            -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-                            """,
-                            returnStdout: true
-                        ).trim()
 
-                    echo "GKE Redis IP: ${GCP_REDIS_IP}"
+                    def REDIS_IP = ""
+
+                    timeout(time: 5, unit: 'MINUTES') {
+                        while (!REDIS_IP) {
+                            REDIS_IP = sh(
+                                script: "kubectl get svc redis-lb -n data -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
+                                returnStdout: true
+                            ).trim()
+
+                            if (!REDIS_IP) {
+                                echo "Waiting for Redis external IP..."
+                                sleep time: 10, unit: 'SECONDS'
+                            }
+                        }
+                    }
+                    echo "Redis IP acquired: ${REDIS_IP}"
+                    // Save for later stages
+                    env.REDIS_IP = REDIS_IP
+                }
+            }
+        }
+        stage('Connect to GKE APPLICATION') {
+			steps {
+				sh '''
+				gcloud config set project $GCP_PROJECT_ID
+				gcloud container clusters get-credentials $GKE_APPLICATION_CLUSTER_NAME --zone $GCP_ZONE
+				'''
+            }
+        }
+        stage('Verify Connection to gke application') {
+            steps {
+                sh 'kubectl get nodes'
+            }
+        }
+        stage('Deploy App to GKE APPLICATION') {
+            steps {
+                script {
+                    sh """
+                    export REDIS_HOST=${REDIS_IP}
+                    envsubst < application-production-stack.yaml | kubectl apply -f -
+                    """
                 }
             }
         }
@@ -81,7 +114,7 @@ pipeline {
                 }
             }
         }
-        stage('Connect to AKS') {
+        stage('Connect to AKS database') {
             steps {
                 sh '''
                 az aks get-credentials \
@@ -91,30 +124,65 @@ pipeline {
                 '''
             }
         }
-        stage('Verify Connection to aks') {
+        stage('Verify Connection to database aks') {
             steps {
                 sh 'kubectl get nodes'
             }
         }
-        stage('Deploy to AKS') {
+        stage('Deploy to AKS database') {
             steps {
                 sh '''
                 kubectl apply -f database-deployment.yaml
                 '''
             }
         }
-        stage('Get Redis External IP from aks') {
+        stage('Wait for Redis IP in AKS') {
             steps {
                 script {
-                    def AZURE_REDIS_IP = sh(
-                        script: """
-                            kubectl get svc redis-lb -n production \
-                            -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-                            """,
-                            returnStdout: true
-                        ).trim()
 
-                    echo "AKS Redis IP: ${AZURE_REDIS_IP}"
+                    def REDIS_IP = ""
+
+                    timeout(time: 5, unit: 'MINUTES') {
+                        while (!REDIS_IP) {
+                            REDIS_IP = sh(
+                                script: "kubectl get svc redis-lb -n data -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
+                                returnStdout: true
+                            ).trim()
+
+                            if (!REDIS_IP) {
+                                echo "Waiting for Redis external IP..."
+                                sleep time: 10, unit: 'SECONDS'
+                            }
+                        }
+                    }
+                    echo "Redis IP acquired: ${REDIS_IP}"
+                    // Save for later stages
+                    env.REDIS_IP = REDIS_IP
+                }
+            }
+        }
+        stage('Connect to AKS APPLICATION') {
+            steps {
+                sh '''
+                az aks get-credentials \
+                  --resource-group $AZURE_RESOURCE_GROUP \
+                  --name $AKS_APPLICATION_CLUSTER_NAME \
+                  --overwrite-existing
+                '''
+            }
+        }
+        stage('Verify Connection to app aks') {
+            steps {
+                sh 'kubectl get nodes'
+            }
+        }
+        stage('Deploy App to AKS') {
+            steps {
+                script {
+                    sh """
+                    export REDIS_HOST=${REDIS_IP}
+                    envsubst < application-production-stack.yaml | kubectl apply -f -
+                    """
                 }
             }
         }
