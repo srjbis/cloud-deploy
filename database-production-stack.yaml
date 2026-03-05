@@ -23,7 +23,7 @@ metadata:
   name: api-config
   namespace: production
 data:
-  REDIS_HOST: redis
+  REDIS_HOST: redis-lb
   REDIS_PORT: "6379"
 ---
 
@@ -78,6 +78,8 @@ kind: Service
 metadata:
   name: redis-lb
   namespace: production
+  annotations:
+    networking.gke.io/load-balancer-type: "Internal"
 spec:
   type: LoadBalancer
   selector:
