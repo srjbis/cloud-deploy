@@ -3,6 +3,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: production
+  labels:
+    istio-injection: enabled
 ---
 
 # Redis Secret
@@ -188,6 +190,40 @@ spec:
             name: frontend
             port: 
               number: 80
+---
+
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: app-gateway
+  namespace: production
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "app.local"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: frontend-route
+  namespace: production
+spec:
+  hosts:
+  - "app.local"
+  gateways:
+  - app-gateway
+  http:
+  - route:
+    - destination:
+        host: frontend
+        port:
+          number: 80
 ---
 
 # HPA
