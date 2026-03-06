@@ -57,7 +57,7 @@ pipeline {
                     timeout(time: 5, unit: 'MINUTES') {
                         while (!REDIS_IP) {
                             REDIS_IP = sh(
-                                script: "kubectl get svc redis-lb -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
+                                script: "kubectl get svc redis-lb -n data -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
                                 returnStdout: true
                             ).trim()
 
@@ -94,6 +94,13 @@ pipeline {
                     envsubst < application-production-stack.yaml | kubectl apply -f -
                     """
                 }
+            }
+        }
+        stage('Deploy to GKE app monitoring') {
+            steps {
+                sh '''
+                kubectl apply -f monitoring-production-stack.yaml
+                '''
             }
         }
         stage('Azure Login') {
@@ -145,7 +152,7 @@ pipeline {
                     timeout(time: 5, unit: 'MINUTES') {
                         while (!REDIS_IP) {
                             REDIS_IP = sh(
-                                script: "kubectl get svc redis-lb -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
+                                script: "kubectl get svc redis-lb -n data -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
                                 returnStdout: true
                             ).trim()
 
@@ -184,6 +191,13 @@ pipeline {
                     envsubst < application-production-stack.yaml | kubectl apply -f -
                     """
                 }
+            }
+        }
+        stage('Deploy to AKS app monitoring') {
+            steps {
+                sh '''
+                kubectl apply -f monitoring-production-stack.yaml
+                '''
             }
         }
     }
