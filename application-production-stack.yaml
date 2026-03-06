@@ -15,15 +15,7 @@ type: Opaque
 stringData:
   REDIS_PASSWORD: Password
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: api-config
-  namespace: production
-data:
-  REDIS_HOST: redis
-  REDIS_PORT: "6379"  
----
+
 # Redis Service
 
 apiVersion: v1
@@ -32,8 +24,23 @@ metadata:
   name: redis
   namespace: production
 spec:
-  type: ExternalName
-  externalName: ${REDIS_IP}
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+
+# Redis Endpoints
+
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: redis
+  namespace: production
+subsets:
+- addresses:
+  - ip: ${REDIS_IP}
+  ports:
+  - port: 6379
 ---
 
 # API Deployment
