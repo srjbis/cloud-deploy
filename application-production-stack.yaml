@@ -152,10 +152,12 @@ metadata:
   name: frontend
   namespace: production
 spec:
+  type: LoadBalancer
   selector:
     app: frontend
   ports:
   - port: 80
+    targetPort: 80
 ---
 
 # Ingress
