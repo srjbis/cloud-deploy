@@ -162,7 +162,7 @@ metadata:
   name: frontend
   namespace: production
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: frontend
   ports:
