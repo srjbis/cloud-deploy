@@ -1,10 +1,16 @@
 pipeline {
     agent any
+	parameters {
+        string(name: 'PROJECT_ID', defaultValue: 'my-project')
+        string(name: 'ZONE', defaultValue: 'asia-south1-a')
+    }
     environment {
         GCP_PROJECT_ID = credentials('gcp-project-id')
         GKE_APPLICATION_CLUSTER_NAME = "application-gke-cluster"
         GKE_DATABASE_CLUSTER_NAME = "database-gke-cluster"
         GCP_ZONE = "asia-south1-a"
+		TF_VAR_project_id = credentials('gcp-project-id')
+		TF_VAR_zone     = "asia-south1-a"
         
         AZURE_TENANT_ID = credentials('azure-tenant-id')
         AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
