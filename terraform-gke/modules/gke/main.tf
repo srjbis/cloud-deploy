@@ -19,3 +19,39 @@ resource "google_compute_subnetwork" "subnet" {
     ip_cidr_range = "10.30.0.0/16"
   }
 }
+
+resource "google_container_cluster" "gke" {
+  name     = var.cluster_name
+  location = var.region
+
+  network    = google_compute_network.vpc.id
+  subnetwork = google_compute_subnetwork.subnet.name
+
+  remove_default_node_pool = true
+  initial_node_count       = 1
+
+  ip_allocation_policy {
+    cluster_secondary_range_name  = "pods"
+    services_secondary_range_name = "services"
+  }
+
+  private_cluster_config {
+    enable_private_nodes    = true
+    enable_private_endpoint = false
+  }
+}
+
+resource "google_container_node_pool" "nodes" {
+  name       = "primary-nodes"
+  cluster    = google_container_cluster.gke.name
+  location   = var.region
+  node_count = 2
+
+  node_config {
+    machine_type = "e2-medium"
+
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+  }
+}
