@@ -29,6 +29,11 @@ resource "google_container_cluster" "gke" {
 
   remove_default_node_pool = true
   initial_node_count       = 1
+  
+  autoscaling {
+    min_node_count = 1
+    max_node_count = 5
+  }
 
   ip_allocation_policy {
     cluster_secondary_range_name  = "pods"
@@ -39,6 +44,17 @@ resource "google_container_cluster" "gke" {
     enable_private_nodes    = true
     enable_private_endpoint = false
   }
+
+  workload_identity_config {
+    workload_pool = "${var.project_id}.svc.id.goog"
+  }
+  
+  /* master_authorized_networks_config {
+    cidr_blocks {
+      cidr_block   = "192.168.29.112/32"
+      display_name = "office"
+    }
+  } */
 }
 
 resource "google_container_node_pool" "nodes" {
