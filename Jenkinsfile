@@ -12,7 +12,9 @@ pipeline {
         AKS_APPLICATION_CLUSTER_NAME = "application-aks-cluster"
         AKS_DATABASE_CLUSTER_NAME = "database-aks-cluster"
     }
-    
+    triggers {
+        githubPush()
+    }
     stages {
 	/*
         stage('Fix Git') {
