@@ -17,196 +17,65 @@ pipeline {
         AZURE_RESOURCE_GROUP = "rg-hybrid"
         AKS_APPLICATION_CLUSTER_NAME = "application-aks-cluster"
         AKS_DATABASE_CLUSTER_NAME = "database-aks-cluster"
+        INFRACOST_API_KEY = credentials('infracost-api-key')
     }
     triggers {
         githubPush()
     }
     stages {
-	/*
-        stage('Fix Git') {
-            steps {
-                sh "git config --global --add safe.directory '*'"
-            }
-        }
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main',
-                    credentialsId: 'git-cred',
-                    url: 'https://github.com/srjbis/cloud-deploy.git'
-            }
-        }
-	*/
-        stage('Connect to GKE DATABASE') {
-			steps {
-				sh '''
-				gcloud config set project $GCP_PROJECT_ID
-				gcloud container clusters get-credentials $GKE_DATABASE_CLUSTER_NAME --zone $GCP_ZONE
-				'''
-            }
-        }
-        stage('Verify Connection to gke database') {
-            steps {
-                sh 'kubectl get nodes'
-            }
-        }
-        stage('Deploy to GKE DATABASE') {
+        stage('Terraform Init') {
             steps {
                 sh '''
-                kubectl apply -f database-production-stack.yaml
+                cd terraform-gke
+                terraform init
                 '''
             }
         }
-        stage('Wait for Redis IP in GKE') {
+        stage('Terraform Validate') {
             steps {
-                script {
-
-                    def REDIS_IP = ""
-
-                    timeout(time: 5, unit: 'MINUTES') {
-                        while (!REDIS_IP) {
-                            REDIS_IP = sh(
-                                script: "kubectl get svc redis-lb -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
-                                returnStdout: true
-                            ).trim()
-
-                            if (!REDIS_IP) {
-                                echo "Waiting for Redis external IP..."
-                                sleep time: 10, unit: 'SECONDS'
-                            }
-                        }
-                    }
-                    echo "Redis IP acquired: ${REDIS_IP}"
-                    // Save for later stages
-                    env.REDIS_IP = REDIS_IP
-                }
+                sh 'terraform validate'
             }
         }
-        stage('Connect to GKE APPLICATION') {
-			steps {
-				sh '''
-				gcloud config set project $GCP_PROJECT_ID
-				gcloud container clusters get-credentials $GKE_APPLICATION_CLUSTER_NAME --zone $GCP_ZONE
-				'''
-            }
-        }
-        stage('Verify Connection to gke application') {
+        stage('Terraform Plan') {
             steps {
-                sh 'kubectl get nodes'
+                sh "terraform plan -out=tfplan"
+                sh "terraform show -json tfplan > plan.json"
             }
         }
-        stage('Deploy App to GKE APPLICATION') {
+        stage('Approval') {
             steps {
-                script {
-                    sh """
-                    export REDIS_HOST=${REDIS_IP}
-                    envsubst < application-production-stack.yaml | kubectl apply -f -
-                    """
-                }
+                input message: 'Approve Terraform Apply?'
             }
         }
-        stage('Deploy to GKE app monitoring') {
+        stage('Cost Estimation') {
             steps {
                 sh '''
-                kubectl apply -f monitoring-production-stack.yaml
+                infracost breakdown --path . --format json --out-file infracost.json
+                infracost output --path infracost.json --format table > cost.txt
                 '''
             }
         }
-        stage('Azure Login') {
+        stage('Send Cost to Approver') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: '4b17e6b1-73ab-4b2f-9bae-8342cc46e89a',
-                    usernameVariable: 'AZURE_CLIENT_ID',
-                    passwordVariable: 'AZURE_CLIENT_SECRET'
-                )]) {
-                    sh '''
-                    az login --service-principal \
-                      -u $AZURE_CLIENT_ID \
-                      -p $AZURE_CLIENT_SECRET \
-                      --tenant $AZURE_TENANT_ID
+                emailext (
+                    subject: "Terraform Cost Estimate",
+                    body: """
+                    Please review the cost before approval.
 
-                    az account set --subscription $AZURE_SUBSCRIPTION_ID
-                    '''
-                }
-            }
-        }
-        stage('Connect to AKS database') {
-            steps {
-                sh '''
-                az aks get-credentials \
-                  --resource-group $AZURE_RESOURCE_GROUP \
-                  --name $AKS_DATABASE_CLUSTER_NAME \
-                  --overwrite-existing
-                '''
-            }
-        }
-        stage('Verify Connection to database aks') {
-            steps {
-                sh 'kubectl get nodes'
-            }
-        }
-        stage('Deploy to AKS database') {
-            steps {
-                sh '''
-                kubectl apply -f database-production-stack.yaml
-                '''
-            }
-        }
-        stage('Wait for Redis IP in AKS') {
-            steps {
-                script {
+                    Cost details:
+                    ${readFile('cost.txt')}
 
-                    def REDIS_IP = ""
-
-                    timeout(time: 5, unit: 'MINUTES') {
-                        while (!REDIS_IP) {
-                            REDIS_IP = sh(
-                                script: "kubectl get svc redis-lb -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true",
-                                returnStdout: true
-                            ).trim()
-
-                            if (!REDIS_IP) {
-                                echo "Waiting for Redis external IP..."
-                                sleep time: 10, unit: 'SECONDS'
-                            }
-                        }
-                    }
-                    echo "Redis IP acquired: ${REDIS_IP}"
-                    // Save for later stages
-                    env.REDIS_IP = REDIS_IP
-                }
+                    Approve in Jenkins UI.
+                    """,
+                    to: "talk2surajbiswas@gmail.com"
+                )
             }
         }
-        stage('Connect to AKS APPLICATION') {
+        stage('Approval Gate') {
             steps {
-                sh '''
-                az aks get-credentials \
-                  --resource-group $AZURE_RESOURCE_GROUP \
-                  --name $AKS_APPLICATION_CLUSTER_NAME \
-                  --overwrite-existing
-                '''
+                input message: "Approve Terraform Apply after cost review?"
             }
         }
-        stage('Verify Connection to app aks') {
-            steps {
-                sh 'kubectl get nodes'
-            }
-        }
-        stage('Deploy App to AKS') {
-            steps {
-                script {
-                    sh """
-                    export REDIS_HOST=${REDIS_IP}
-                    envsubst < application-production-stack.yaml | kubectl apply -f -
-                    """
-                }
-            }
-        }
-        stage('Deploy to AKS app monitoring') {
-            steps {
-                sh '''
-                kubectl apply -f monitoring-production-stack.yaml
-                '''
-            }
-        }
+        
     }
 }

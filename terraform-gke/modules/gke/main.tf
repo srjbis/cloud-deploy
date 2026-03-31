@@ -28,11 +28,6 @@ resource "google_container_cluster" "gke" {
   subnetwork = google_compute_subnetwork.subnet.name
 
   remove_default_node_pool = true
-  
-  autoscaling {
-    min_node_count = 1
-    max_node_count = 5
-  }
 
   ip_allocation_policy {
     cluster_secondary_range_name  = "pods"
@@ -60,8 +55,11 @@ resource "google_container_node_pool" "nodes" {
   name       = "primary-nodes"
   cluster    = google_container_cluster.gke.name
   location   = var.zone
-  node_count = 2
-
+  #node_count = 2
+  autoscaling {
+    min_node_count = 1
+    max_node_count = 5
+  }
   node_config {
     machine_type = "e2-medium"
 
