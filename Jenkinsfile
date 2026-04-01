@@ -40,7 +40,7 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                sh "terraform plan --var-file="envs/dev/dev.tfvars" -out=tfplan"
+                sh "terraform plan -var-file="envs\dev\dev.tfvars" -out=tfplan"
                 sh "terraform show -json tfplan > plan.json"
             }
         }
