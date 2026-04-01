@@ -10,7 +10,7 @@ pipeline {
         GKE_DATABASE_CLUSTER_NAME = "database-gke-cluster"
         GCP_ZONE = "asia-south1-a"
 		TF_VAR_project_id = credentials('gcp-project-id')
-		TF_VAR_zone     = "asia-south1-a"
+		// TF_VAR_zone     = "asia-south1-a"
         
         AZURE_TENANT_ID = credentials('azure-tenant-id')
         AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
@@ -27,6 +27,8 @@ pipeline {
             steps {
                 sh '''
                 cd terraform-gke
+                pwd
+                echo $TF_VAR_project_id
                 terraform init
                 '''
             }
