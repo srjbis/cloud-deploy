@@ -61,7 +61,7 @@ resource "google_container_node_pool" "nodes" {
     max_node_count = 5
   }
   node_config {
-    machine_type = "e2-medium"
+    machine_type = var.instance_type
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
