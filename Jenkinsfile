@@ -1,9 +1,9 @@
 pipeline {
     agent any
-	parameters {
+	/* parameters {
         string(name: 'PROJECT_ID', defaultValue: 'my-project')
         string(name: 'ZONE', defaultValue: 'asia-south1-a')
-    }
+    } */
     environment {
         GCP_PROJECT_ID = credentials('gcp-project-id')
         GKE_APPLICATION_CLUSTER_NAME = "application-gke-cluster"
@@ -40,7 +40,7 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                sh "terraform plan -out=tfplan"
+                sh "terraform plan --var-file="envs/dev/dev.tfvars" -out=tfplan"
                 sh "terraform show -json tfplan > plan.json"
             }
         }
