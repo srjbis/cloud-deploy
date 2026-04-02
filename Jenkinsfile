@@ -68,7 +68,7 @@ pipeline {
 
                     Approve in Jenkins UI.
                     """,
-                    to: "talk2surajbiswas@gmail.com"
+                    to: "reach2surajbiswas@gmail.com"
                 )
             }
         }
