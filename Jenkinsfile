@@ -64,7 +64,7 @@ pipeline {
                     Please review the cost before approval.
 
                     Cost details:
-                    ${readFile('cost.txt')}
+                    
 
                     Approve in Jenkins UI.
                     """,
