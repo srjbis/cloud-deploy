@@ -27,10 +27,6 @@ pipeline {
             steps {
                 sh '''
                 cd terraform-gke
-                pwd
-                echo ${WORKSPACE}
-                echo $TF_VAR_project_id
-                ls -l ${WORKSPACE}/terraform-gke/envs/dev/dev.tfvars
                 terraform init
                 '''
             }
@@ -42,7 +38,7 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                sh "terraform plan -var-file=\"envs/dev/dev.tfvars\" -out=tfplan"
+                sh "terraform plan -var-file=\"${WORKSPACE}/terraform-gke/envs/dev/dev.tfvars\" -out=tfplan"
                 sh "terraform show -json tfplan > plan.json"
             }
         }
