@@ -29,7 +29,7 @@ pipeline {
                 cd terraform-gke
                 pwd
                 echo $TF_VAR_project_id
-                ls -l envs/dev/dev.tfvars
+                ls -l ${WORKSPACE}/envs/dev/dev.tfvars
                 terraform init
                 '''
             }
