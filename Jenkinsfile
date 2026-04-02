@@ -40,7 +40,7 @@ pipeline {
             steps {
                 //sh "terraform plan -var-file=\"${WORKSPACE}/terraform-gke/envs/dev/dev.tfvars\" -out=tfplan".
                 sh "terraform -chdir=/var/jenkins_home/workspace/auto-deploy/terraform-gke plan -var-file=envs/dev/dev.tfvars -out=tfplan"
-                sh "terraform show -json tfplan > plan.json"
+                sh "terraform -chdir=/var/jenkins_home/workspace/auto-deploy/terraform-gke show -json tfplan > plan.json"
             }
         }
         stage('Approval') {
