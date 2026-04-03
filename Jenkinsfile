@@ -18,7 +18,7 @@ pipeline {
         AKS_APPLICATION_CLUSTER_NAME = "application-aks-cluster"
         AKS_DATABASE_CLUSTER_NAME = "database-aks-cluster"
         INFRACOST_API_KEY = credentials('infracost-api-key')
-        TF_DIR = "${WORKSPACE}/terraform-gke"
+        TF_DIR = "${WORKSPACE}/terraform/envs/dev" // for now it is hardcode but in future it will be input specific
     }
     options {
         durabilityHint('MAX_SURVIVABILITY')
@@ -46,7 +46,7 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                sh "terraform -chdir=$TF_DIR plan -var-file=envs/dev/dev.tfvars -out=tfplan"
+                sh "terraform -chdir=$TF_DIR plan -var-file=dev.tfvars -out=tfplan"
                 sh "terraform -chdir=$TF_DIR show -json tfplan > plan.json"
             }
         }
@@ -58,6 +58,7 @@ pipeline {
         stage('Cost Estimation') {
             steps {
                 sh '''
+
                 infracost breakdown --path . --format json --out-file infracost.json
                 infracost output --path infracost.json --format table > cost.txt
                 cat cost.txt
