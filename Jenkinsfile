@@ -44,6 +44,13 @@ pipeline {
                 '''
             }
         }
+        stage('Destroy') {
+            steps {
+                timeout(time: 90, unit: 'MINUTES') {
+                    sh "terraform -chdir=$TF_DIR destroy -auto-approve | tee apply.log"
+                }
+            }
+        }
         stage('Terraform Plan') {
             steps {
                 sh "terraform -chdir=$TF_DIR plan -var-file=dev.tfvars -out=tfplan"
