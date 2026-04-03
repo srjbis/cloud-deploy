@@ -28,11 +28,6 @@ pipeline {
         githubPush()
     }
     stages {
-        stage('Start Clean') {
-            steps {
-                deleteDir()
-            }
-        }
         stage('Terraform Init') {
             steps {
                 sh '''
