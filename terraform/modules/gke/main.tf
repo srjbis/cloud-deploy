@@ -40,6 +40,11 @@ resource "google_container_cluster" "gke" {
     enable_private_endpoint = false
   }
 
+  cluster_autoscaling {
+    enabled = true
+    autoscaling_profile = "BALANCED"  # or "OPTIMIZE_UTILIZATION"
+  }
+
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
