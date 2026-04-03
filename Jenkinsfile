@@ -27,6 +27,11 @@ pipeline {
         githubPush()
     }
     stages {
+        stage('Start Clean') {
+            steps {
+                deleteDir()
+            }
+        }
         stage('Terraform Init') {
             steps {
                 sh '''
@@ -42,7 +47,7 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                sh "terraform -chdir=/var/jenkins_home/workspace/auto-deploy/terraform-gke plan -var-file=envs/dev/dev.tfvars -out=tfplan"
+                sh "terraform -chdir=${WORKSPACE}/terraform-gke plan -var-file=envs/dev/dev.tfvars -out=tfplan"
                 sh "terraform -chdir=/var/jenkins_home/workspace/auto-deploy/terraform-gke show -json tfplan > plan.json"
             }
         }
@@ -88,6 +93,10 @@ pipeline {
                 }
             }
         }
-        
+    }
+    post {
+        always {
+            deleteDir()
+        }
     }
 }
