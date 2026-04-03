@@ -31,21 +31,23 @@ pipeline {
         stage('Terraform Init') {
             steps {
                 sh '''
-                cd terraform-gke
+                cd $TF_DIR
                 terraform init
                 '''
             }
         }
         stage('Terraform Validate') {
             steps {
-                sh 'terraform validate'
+                sh '''
+                cd $TF_DIR
+                terraform validate
+                '''
             }
         }
         stage('Terraform Plan') {
             steps {
-                echo ""
                 sh "terraform -chdir=$TF_DIR plan -var-file=envs/dev/dev.tfvars -out=tfplan"
-                sh "terraform -chdir=/var/jenkins_home/workspace/auto-deploy/terraform-gke show -json tfplan > plan.json"
+                sh "terraform -chdir=$TF_DIR show -json tfplan > plan.json"
             }
         }
         stage('Approval') {
@@ -70,7 +72,7 @@ pipeline {
                     Please review the cost before approval.
 
                     Cost details:
-                    ${readFile('/var/jenkins_home/workspace/auto-deploy/cost.txt')}
+                    ${readFile('cost.txt')}
 
                     Approve in Jenkins UI.
                     """,
@@ -86,7 +88,7 @@ pipeline {
         stage('Apply') {
             steps {
                 timeout(time: 90, unit: 'MINUTES') {
-                    sh 'terraform apply -no-color tfplan | tee apply.log'
+                    sh "terraform -chdir=$TF_DIR apply -no-color tfplan | tee apply.log"
                 }
             }
         }
