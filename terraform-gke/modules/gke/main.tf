@@ -27,6 +27,7 @@ resource "google_container_cluster" "gke" {
   network    = google_compute_network.vpc.id
   subnetwork = google_compute_subnetwork.subnet.name
 
+  initial_node_count = 1
   remove_default_node_pool = true
 
   ip_allocation_policy {
