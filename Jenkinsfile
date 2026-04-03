@@ -19,6 +19,10 @@ pipeline {
         AKS_DATABASE_CLUSTER_NAME = "database-aks-cluster"
         INFRACOST_API_KEY = credentials('infracost-api-key')
     }
+    options {
+        durabilityHint('MAX_SURVIVABILITY')
+        disableConcurrentBuilds()
+    }
     triggers {
         githubPush()
     }
@@ -38,7 +42,6 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                //sh "terraform plan -var-file=\"${WORKSPACE}/terraform-gke/envs/dev/dev.tfvars\" -out=tfplan".
                 sh "terraform -chdir=/var/jenkins_home/workspace/auto-deploy/terraform-gke plan -var-file=envs/dev/dev.tfvars -out=tfplan"
                 sh "terraform -chdir=/var/jenkins_home/workspace/auto-deploy/terraform-gke show -json tfplan > plan.json"
             }
@@ -64,7 +67,7 @@ pipeline {
                     Please review the cost before approval.
 
                     Cost details:
-                    
+                    ${readFile('/var/jenkins_home/workspace/auto-deploy/cost.txt')}
 
                     Approve in Jenkins UI.
                     """,
@@ -75,6 +78,13 @@ pipeline {
         stage('Approval Gate') {
             steps {
                 input message: "Approve Terraform Apply after cost review?"
+            }
+        }
+        stage('Apply') {
+            steps {
+                timeout(time: 90, unit: 'MINUTES') {
+                    sh 'terraform apply -no-color tfplan | tee apply.log'
+                }
             }
         }
         
