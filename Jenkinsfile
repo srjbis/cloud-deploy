@@ -18,6 +18,7 @@ pipeline {
         AKS_APPLICATION_CLUSTER_NAME = "application-aks-cluster"
         AKS_DATABASE_CLUSTER_NAME = "database-aks-cluster"
         INFRACOST_API_KEY = credentials('infracost-api-key')
+        TF_DIR = "${WORKSPACE}/terraform-gke"
     }
     options {
         durabilityHint('MAX_SURVIVABILITY')
@@ -47,7 +48,8 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                sh "terraform -chdir=${WORKSPACE}/terraform-gke plan -var-file=envs/dev/dev.tfvars -out=tfplan"
+                echo ""
+                sh "terraform -chdir=$TF_DIR plan -var-file=envs/dev/dev.tfvars -out=tfplan"
                 sh "terraform -chdir=/var/jenkins_home/workspace/auto-deploy/terraform-gke show -json tfplan > plan.json"
             }
         }
