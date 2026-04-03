@@ -55,7 +55,7 @@ resource "google_container_node_pool" "nodes" {
   name       = "primary-nodes"
   cluster    = google_container_cluster.gke.name
   location   = var.zone
-  #node_count = 2
+  initial_node_count = 1
   autoscaling {
     min_node_count = 1
     max_node_count = 5
