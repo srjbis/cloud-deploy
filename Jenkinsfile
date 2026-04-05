@@ -30,18 +30,12 @@ pipeline {
     stages {
         stage('Terraform Init') {
             steps {
-                sh '''
-                cd $TF_DIR
-                terraform init
-                '''
+                sh "terraform -chdir=$TF_DIR plan init"
             }
         }
         stage('Terraform Validate') {
             steps {
-                sh '''
-                cd $TF_DIR
-                terraform validate
-                '''
+                sh "terraform -chdir=$TF_DIR plan validate"
             }
         }
         stage('Terraform Plan') {
@@ -53,7 +47,6 @@ pipeline {
         stage('Cost Estimation') {
             steps {
                 sh '''
-
                 infracost breakdown --path . --format json --out-file infracost.json
                 infracost output --path infracost.json --format table > cost.txt
                 cat cost.txt
@@ -85,9 +78,22 @@ pipeline {
             steps {
                 timeout(time: 90, unit: 'MINUTES') {
                     sh "terraform -chdir=$TF_DIR apply -no-color tfplan | tee apply.log"
-                    sh "terraform -chdir=$TF_DIR/argocd-app plan -out=tfplan"
-
                 }
+            }
+        }
+        stage('Argocd-app Terraform Init') {
+            steps {
+                sh "terraform -chdir=$TF_DIR/argocd-app init"
+            }
+        }
+        stage('Argocd-app Terraform Validate') {
+            steps {
+                sh "terraform -chdir=$TF_DIR/argocd-app validate"
+            }
+        }
+        stage('Argocd-app Terraform plan') {
+            steps {
+                sh "terraform -chdir=$TF_DIR/argocd-app plan -out=tfplan"
             }
         }
         stage('Apply AgroCD app') {

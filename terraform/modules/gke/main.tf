@@ -43,6 +43,17 @@ resource "google_container_cluster" "gke" {
   cluster_autoscaling {
     enabled = true
     autoscaling_profile = "BALANCED"  # or "OPTIMIZE_UTILIZATION"
+    resource_limits {
+      resource_type = "cpu"
+      minimum       = 1
+      maximum       = 4
+    }
+
+    resource_limits {
+      resource_type = "memory"
+      minimum       = 2
+      maximum       = 8
+    }
   }
 
   workload_identity_config {
