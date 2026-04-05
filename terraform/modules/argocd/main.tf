@@ -22,6 +22,12 @@ EOF
   ]
 }
 
+resource "time_sleep" "wait_for_argocd" {
+  depends_on = [helm_release.argocd]
+
+  create_duration = "60s"
+}
+
 resource "kubernetes_manifest" "argocd_app" {
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
@@ -53,5 +59,5 @@ resource "kubernetes_manifest" "argocd_app" {
     }
   }
 
-  depends_on = [helm_release.argocd]
+  depends_on = [time_sleep.wait_for_argocd]
 }
