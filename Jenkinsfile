@@ -30,18 +30,18 @@ pipeline {
     stages {
         stage('Terraform Init') {
             steps {
-                sh "terraform -chdir=$TF_DIR -no-color init"
+                sh "terraform -chdir=$TF_DIR init"
             }
         }
         stage('Terraform Validate') {
             steps {
-                sh "terraform -chdir=$TF_DIR -no-color validate"
+                sh "terraform -chdir=$TF_DIR validate -no-color"
             }
         }
         stage('Terraform Plan') {
             steps {
                 sh "terraform -chdir=$TF_DIR plan -no-color -var-file=dev.tfvars -out=tfplan"
-                sh "terraform -chdir=$TF_DIR -no-color show -json tfplan > plan.json"
+                sh "terraform -chdir=$TF_DIR show -no-color -json tfplan > plan.json"
             }
         }
         stage('Cost Estimation') {
@@ -69,7 +69,7 @@ pipeline {
                 )
             }
         }
-        stage('Approval Gate') {
+        stage('Approval Gate - 1') {
             steps {
                 input message: "Approve Terraform Apply after cost review?"
             }
@@ -83,17 +83,22 @@ pipeline {
         }
         stage('Argocd-app Terraform Init') {
             steps {
-                sh "terraform -chdir=$TF_DIR/argocd-app -no-color init"
+                sh "terraform -chdir=$TF_DIR/argocd-app init"
             }
         }
         stage('Argocd-app Terraform Validate') {
             steps {
-                sh "terraform -chdir=$TF_DIR/argocd-app -no-color validate"
+                sh "terraform -chdir=$TF_DIR/argocd-app validate -no-color"
             }
         }
         stage('Argocd-app Terraform plan') {
             steps {
-                sh "terraform -chdir=$TF_DIR/argocd-app -no-color plan -out=tfplan"
+                sh "terraform -chdir=$TF_DIR/argocd-app plan -no-color -out=tfplan"
+            }
+        }
+        stage('Approval Gate - 2') {
+            steps {
+                input message: "Approve Terraform Apply?"
             }
         }
         stage('Apply AgroCD app') {
