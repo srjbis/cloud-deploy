@@ -84,8 +84,16 @@ pipeline {
         stage('Apply') {
             steps {
                 timeout(time: 90, unit: 'MINUTES') {
-                    sh "terraform -chdir=$TF_DIR apply -target=module.gke -no-color tfplan | tee apply.log"
-                    sh "terraform -chdir=$TF_DIR apply -target=module.argocd -no-color tfplan | tee apply.log"
+                    sh "terraform -chdir=$TF_DIR apply -no-color tfplan | tee apply.log"
+                    sh "terraform -chdir=$TF_DIR/argocd-app plan -out=tfplan"
+
+                }
+            }
+        }
+        stage('Apply AgroCD app') {
+            steps {
+                timeout(time: 90, unit: 'MINUTES') {
+                    sh "terraform -chdir=$TF_DIR/agrocd-app apply -no-color tfplan | tee apply.log"
                 }
             }
         }
