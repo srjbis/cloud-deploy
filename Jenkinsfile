@@ -30,12 +30,12 @@ pipeline {
     stages {
         stage('Terraform Init') {
             steps {
-                sh "terraform -chdir=$TF_DIR plan init"
+                sh "terraform -chdir=$TF_DIR init"
             }
         }
         stage('Terraform Validate') {
             steps {
-                sh "terraform -chdir=$TF_DIR plan validate"
+                sh "terraform -chdir=$TF_DIR validate"
             }
         }
         stage('Terraform Plan') {
