@@ -30,18 +30,18 @@ pipeline {
     stages {
         stage('Terraform Init') {
             steps {
-                sh "terraform -chdir=$TF_DIR init"
+                sh "terraform -chdir=$TF_DIR -no-color init"
             }
         }
         stage('Terraform Validate') {
             steps {
-                sh "terraform -chdir=$TF_DIR validate"
+                sh "terraform -chdir=$TF_DIR -no-color validate"
             }
         }
         stage('Terraform Plan') {
             steps {
-                sh "terraform -chdir=$TF_DIR plan -var-file=dev.tfvars -out=tfplan"
-                sh "terraform -chdir=$TF_DIR show -json tfplan > plan.json"
+                sh "terraform -chdir=$TF_DIR plan -no-color -var-file=dev.tfvars -out=tfplan"
+                sh "terraform -chdir=$TF_DIR -no-color show -json tfplan > plan.json"
             }
         }
         stage('Cost Estimation') {
@@ -83,17 +83,17 @@ pipeline {
         }
         stage('Argocd-app Terraform Init') {
             steps {
-                sh "terraform -chdir=$TF_DIR/argocd-app init"
+                sh "terraform -chdir=$TF_DIR/argocd-app -no-color init"
             }
         }
         stage('Argocd-app Terraform Validate') {
             steps {
-                sh "terraform -chdir=$TF_DIR/argocd-app validate"
+                sh "terraform -chdir=$TF_DIR/argocd-app -no-color validate"
             }
         }
         stage('Argocd-app Terraform plan') {
             steps {
-                sh "terraform -chdir=$TF_DIR/argocd-app plan -out=tfplan"
+                sh "terraform -chdir=$TF_DIR/argocd-app -no-color plan -out=tfplan"
             }
         }
         stage('Apply AgroCD app') {
