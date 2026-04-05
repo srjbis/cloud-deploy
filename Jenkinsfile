@@ -44,22 +44,10 @@ pipeline {
                 '''
             }
         }
-        stage('Destroy') {
-            steps {
-                timeout(time: 90, unit: 'MINUTES') {
-                    sh "terraform -chdir=$TF_DIR destroy -var-file=dev.tfvars -auto-approve | tee apply.log"
-                }
-            }
-        }
         stage('Terraform Plan') {
             steps {
                 sh "terraform -chdir=$TF_DIR plan -var-file=dev.tfvars -out=tfplan"
                 sh "terraform -chdir=$TF_DIR show -json tfplan > plan.json"
-            }
-        }
-        stage('Approval') {
-            steps {
-                input message: 'Approve Terraform Apply?'
             }
         }
         stage('Cost Estimation') {
@@ -96,7 +84,8 @@ pipeline {
         stage('Apply') {
             steps {
                 timeout(time: 90, unit: 'MINUTES') {
-                    sh "terraform -chdir=$TF_DIR apply -no-color tfplan | tee apply.log"
+                    sh "terraform -chdir=$TF_DIR apply -target=module.gke -no-color tfplan | tee apply.log"
+                    sh "terraform -chdir=$TF_DIR apply -target=module.argocd -no-color tfplan | tee apply.log"
                 }
             }
         }
