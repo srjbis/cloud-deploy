@@ -40,8 +40,8 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                sh "terraform -chdir=$TF_DIR plan -no-color -var-file=dev.tfvars -out=tfplan"
-                sh "terraform -chdir=$TF_DIR show -no-color -json tfplan > plan.json"
+                sh "terraform -chdir=$TF_DIR plan -target=module.gke -target=module.argocd-infra -no-color -var-file=dev.tfvars -out=tfplan"
+                sh "terraform -chdir=$TF_DIR show -target=module.gke -target=module.argocd-infra -no-color -json tfplan > plan.json"
             }
         }
         stage('Cost Estimation') {
@@ -77,23 +77,23 @@ pipeline {
         stage('Apply') {
             steps {
                 timeout(time: 90, unit: 'MINUTES') {
-                    sh "terraform -chdir=$TF_DIR apply -no-color tfplan | tee apply.log"
+                    sh "terraform -chdir=$TF_DIR apply -target=module.gke -target=module.argocd-infra -no-color tfplan | tee apply.log"
                 }
             }
         }
         stage('Argocd-app Terraform Init') {
             steps {
-                sh "terraform -chdir=$TF_DIR/argocd-app init"
+                sh "terraform -chdir=$TF_DIR init"
             }
         }
         stage('Argocd-app Terraform Validate') {
             steps {
-                sh "terraform -chdir=$TF_DIR/argocd-app validate -no-color"
+                sh "terraform -chdir=$TF_DIR validate -no-color"
             }
         }
         stage('Argocd-app Terraform plan') {
             steps {
-                sh "terraform -chdir=$TF_DIR/argocd-app plan -no-color -out=tfplan"
+                sh "terraform -chdir=$TF_DIR plan -target=module.argocd-app -no-color -out=tfplan"
             }
         }
         stage('Approval Gate - 2') {
@@ -104,7 +104,7 @@ pipeline {
         stage('Apply AgroCD app') {
             steps {
                 timeout(time: 90, unit: 'MINUTES') {
-                    sh "terraform -chdir=$TF_DIR/agrocd-app apply -no-color tfplan | tee apply.log"
+                    sh "terraform -chdir=$TF_DIR apply -target=module.argocd-app -no-color tfplan | tee apply.log"
                 }
             }
         }
