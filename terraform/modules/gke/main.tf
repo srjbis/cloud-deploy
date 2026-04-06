@@ -5,7 +5,7 @@ resource "google_compute_network" "vpc" {
 
 resource "google_compute_router" "router" {
   name    = "nat-router"
-  network = "default"
+  network = google_compute_network.vpc
   region  = var.region
 }
 
@@ -19,7 +19,7 @@ resource "google_compute_router_nat" "nat" {
 
 resource "google_compute_firewall" "egress" {
   name    = "allow-egress"
-  network = "default"
+  network = google_compute_network.vpc
 
   direction = "EGRESS"
 
