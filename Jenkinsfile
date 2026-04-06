@@ -93,7 +93,7 @@ pipeline {
         }
         stage('Argocd-app Terraform plan') {
             steps {
-                sh "terraform -chdir=$TF_DIR plan -target=module.argocd-app -no-color -out=tfplan"
+                sh "terraform -chdir=$TF_DIR plan -target=module.argocd-app -no-color -var-file=dev.tfvars -out=tfplan"
             }
         }
         stage('Approval Gate - 2') {
