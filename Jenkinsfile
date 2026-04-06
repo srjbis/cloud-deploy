@@ -81,16 +81,6 @@ pipeline {
                 }
             }
         }
-        stage('Argocd-app Terraform Init') {
-            steps {
-                sh "terraform -chdir=$TF_DIR init"
-            }
-        }
-        stage('Argocd-app Terraform Validate') {
-            steps {
-                sh "terraform -chdir=$TF_DIR validate -no-color"
-            }
-        }
         stage('Argocd-app Terraform plan') {
             steps {
                 sh "terraform -chdir=$TF_DIR plan -target=module.argocd-app -no-color -var-file=dev.tfvars -out=tfplan"

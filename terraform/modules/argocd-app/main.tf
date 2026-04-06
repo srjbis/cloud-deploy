@@ -11,7 +11,7 @@ resource "kubernetes_manifest" "argocd-app" {
     spec = {
       source = {
         repoURL        = "https://github.com/srjbis/cloud-deploy.git"
-        path           = "terraform/"
+        path           = "k8s/"
         targetRevision = "HEAD"
       }
 
@@ -28,4 +28,5 @@ resource "kubernetes_manifest" "argocd-app" {
       }
     }
   }
+  depends_on = [ helm_release.argocd ]
 }
