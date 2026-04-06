@@ -10,6 +10,7 @@ resource "helm_release" "argocd" {
 
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
+  version    = "9.4.16"
 
   create_namespace = false
 
@@ -20,4 +21,8 @@ server:
     type: LoadBalancer
 EOF
   ]
+
+  wait    = true
+  timeout = 600
+  depends_on = [ kubernetes_namespace_v1.argocd ]
 }
