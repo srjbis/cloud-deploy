@@ -28,5 +28,4 @@ resource "kubernetes_manifest" "argocd-app" {
       }
     }
   }
-  depends_on = [ helm_release.argocd ]
 }
