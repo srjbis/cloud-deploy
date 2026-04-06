@@ -41,7 +41,7 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 sh "terraform -chdir=$TF_DIR plan -target=module.gke -target=module.argocd-infra -no-color -var-file=dev.tfvars -out=tfplan"
-                sh "terraform -chdir=$TF_DIR show -target=module.gke -target=module.argocd-infra -no-color -json tfplan > plan.json"
+                sh "terraform -chdir=$TF_DIR show -no-color -json tfplan > plan.json"
             }
         }
         stage('Cost Estimation') {
