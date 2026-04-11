@@ -56,6 +56,7 @@ resource "google_container_cluster" "gke" {
 
   initial_node_count = 1
   remove_default_node_pool = true
+  deletion_protection = false
 
   ip_allocation_policy {
     cluster_secondary_range_name  = "pods"

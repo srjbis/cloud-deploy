@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.grafana.serviceType }}
+  selector:
+    app: grafana
+  ports:
+  - port: {{ .Values.grafana.port }}

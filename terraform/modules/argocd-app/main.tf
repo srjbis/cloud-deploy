@@ -9,9 +9,10 @@ resource "kubernetes_manifest" "argocd-app" {
     }
 
     spec = {
+      project = "default"
       source = {
         repoURL        = "https://github.com/srjbis/cloud-deploy.git"
-        path           = "k8s/"
+        path           = "helm/monitoring-stack"
         targetRevision = "HEAD"
       }
 

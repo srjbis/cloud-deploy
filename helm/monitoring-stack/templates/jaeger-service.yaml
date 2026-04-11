@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.jaeger.serviceType }}
+  selector:
+    app: jaeger
+  ports:
+  - port: {{ .Values.jaeger.port }}
