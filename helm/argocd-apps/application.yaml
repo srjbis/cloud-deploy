@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/srjbis/cloud-deploy.git
-    path: application-stack
+    path: helm/application-stack
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
