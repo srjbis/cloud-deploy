@@ -12,7 +12,7 @@ resource "kubernetes_manifest" "argocd-app" {
       project = "default"
       source = {
         repoURL        = "https://github.com/srjbis/cloud-deploy.git"
-        path           = "helm"
+        path           = "helm/argocd-apps"
         targetRevision = "HEAD"
       }
 
