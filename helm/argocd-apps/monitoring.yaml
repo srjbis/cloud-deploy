@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/srjbis/cloud-deploy.git
-    path: monitoring-stack
+    path: helm/monitoring-stack
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
