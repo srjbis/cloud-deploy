@@ -1,38 +1,8 @@
-#### Namespace #########
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: production
----
-
-# Redis Secret
-apiVersion: v1
-kind: Secret
-metadata:
-  name: redis-secret
-  namespace: production
-type: Opaque
-stringData:
-  REDIS_PASSWORD: Password
----
-
-# API ConfigMap
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: api-config
-  namespace: production
-data:
-  REDIS_HOST: redis-lb
-  REDIS_PORT: "6379"
----
-
-# Redis StatefulSet
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: redis
-  namespace: production
+  namespace: {{ .Values.namespace }}
 spec:
   selector:
     matchLabels:
@@ -70,20 +40,3 @@ spec:
       resources:
         requests:
           storage: 1Gi
----
-
-# Redis Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: redis-lb
-  namespace: production
-  annotations:
-    networking.gke.io/load-balancer-type: "Internal"
-spec:
-  type: LoadBalancer
-  selector:
-    app: redis
-  ports:
-  - port: 6379
-    targetPort: 6379
