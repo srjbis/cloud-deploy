@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - name: api
+        image: {{ .Values.api.image }}
+        args:
+          - "-text=api connected"
+        ports:
+        - containerPort: 5678
+        resources:
+          requests:
+            cpu: {{ .Values.api.cpuRequest }}
+            memory: {{ .Values.api.memoryRequest }}
+          limits:
+            cpu: {{ .Values.api.cpuLimit }}
+            memory: {{ .Values.api.memoryLimit }}
+        env:
+        - name: REDIS_HOST
+          value: redis
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: REDIS_PASSWORD

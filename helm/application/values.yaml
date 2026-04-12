@@ -1,0 +1,24 @@
+namespace: application
+
+redis:
+  password: Password
+  ip: "1.2.3.4"   # 🔥 replace with real REDIS_IP
+
+api:
+  replicas: 3
+  image: hashicorp/http-echo
+  cpuRequest: "100m"
+  memoryRequest: "128Mi"
+  cpuLimit: "300m"
+  memoryLimit: "256Mi"
+
+frontend:
+  image: nginx:stable
+
+ingress:
+  host: app.local
+
+hpa:
+  minReplicas: 3
+  maxReplicas: 10
+  cpuUtilization: 50
