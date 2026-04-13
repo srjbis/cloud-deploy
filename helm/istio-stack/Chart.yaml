@@ -1,0 +1,4 @@
+apiVersion: v2
+name: istio
+description: Istio installation
+version: 0.1.0
