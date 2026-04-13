@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istiod
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"   # SECOND
+spec:
+  project: default
+
+  source:
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: istiod
+    targetRevision: 1.21.0
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.namespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

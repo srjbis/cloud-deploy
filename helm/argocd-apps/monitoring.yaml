@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: monitoring-stack
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"  # FIRST to deploy
 spec:
   project: default
   source:

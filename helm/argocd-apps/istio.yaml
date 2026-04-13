@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: application-stack
+  name: istio-stack
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "1" # LAST to Deploy
+    argocd.argoproj.io/sync-wave: "-3" # THIRD to Deploy
 spec:
   project: default
   source:
     repoURL: https://github.com/srjbis/cloud-deploy.git
-    path: helm/application-stack
+    path: helm/istio-stack
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
-    namespace: application
+    namespace: istio-system
   syncPolicy:
     automated:
       prune: true
