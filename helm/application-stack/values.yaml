@@ -2,7 +2,7 @@ namespace: application
 
 redis:
   password: Password
-  ip: "1.2.3.4"   # 🔥 replace with real REDIS_IP
+  ip: "10.10.0.7"   # 🔥 replace with real REDIS_IP
 
 api:
   replicas: 3
