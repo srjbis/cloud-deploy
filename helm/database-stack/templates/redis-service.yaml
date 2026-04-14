@@ -6,7 +6,8 @@ metadata:
   annotations:
     networking.gke.io/load-balancer-type: "Internal"
 spec:
-  type: LoadBalancer
+  #type: LoadBalancer
+  type: ClusterIP
   selector:
     app: redis
   ports:
