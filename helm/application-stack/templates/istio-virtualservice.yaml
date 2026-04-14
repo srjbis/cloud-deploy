@@ -5,7 +5,8 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   hosts:
-    - {{ .Values.ingress.host | quote }}
+    - {{ .Values.ingress.host1 | quote }}
+    - {{ .Values.ingress.host2 | quote }}
   gateways:
     - app-gateway
   http:

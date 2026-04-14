@@ -12,4 +12,5 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - {{ .Values.ingress.host | quote }}
+    - {{ .Values.ingress.host1 | quote }}
+    - {{ .Values.ingress.host2 | quote }}
