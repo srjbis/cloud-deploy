@@ -15,7 +15,8 @@ frontend:
   image: nginx:stable
 
 ingress:
-  host: srjbis.online
+  host1: srjbis.online
+  host2: www.srjbis.online
 
 hpa:
   minReplicas: 3
