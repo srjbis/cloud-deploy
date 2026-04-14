@@ -2,5 +2,5 @@ namespace: database
 
 redis:
   password: Password
-  host: redis-lb
+  host: redis
   port: "6379"

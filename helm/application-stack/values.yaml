@@ -2,7 +2,6 @@ namespace: application
 
 redis:
   password: Password
-  ip: "10.10.0.7"   # 🔥 replace with real REDIS_IP
 
 api:
   replicas: 3
@@ -16,7 +15,7 @@ frontend:
   image: nginx:stable
 
 ingress:
-  host: app.local
+  host: www.srjbis.online
 
 hpa:
   minReplicas: 3
